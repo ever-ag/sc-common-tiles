@@ -81,6 +81,12 @@
             <url>https://maven.pkg.github.com/ever-ag/all</url>
         </repository>
     </repositories>
+    <pluginRepositories>
+        <pluginRepository>
+            <id>github</id>
+            <url>https://maven.pkg.github.com/ever-ag/all</url>
+        </pluginRepository>
+    </pluginRepositories>
     <distributionManagement>
         <repository>
             <id>github</id>
