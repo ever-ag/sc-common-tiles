@@ -69,11 +69,30 @@
         <!-- dev@tiles.apache.org :: this line satisfies INFRA-3329 -->
     </issueManagement>
 
+<!--    <distributionManagement>-->
+<!--        <site>-->
+<!--            <id>apache-site</id>-->
+<!--            <url>scp://people.apache.org/www/tiles.apache.org/framework</url>-->
+<!--        </site>-->
+<!--    </distributionManagement>-->
+    <repositories>
+        <repository>
+            <id>github</id>
+            <url>https://maven.pkg.github.com/ever-ag/all</url>
+        </repository>
+    </repositories>
+    <pluginRepositories>
+        <pluginRepository>
+            <id>github</id>
+            <url>https://maven.pkg.github.com/ever-ag/all</url>
+        </pluginRepository>
+    </pluginRepositories>
     <distributionManagement>
-        <site>
-            <id>apache-site</id>
-            <url>scp://people.apache.org/www/tiles.apache.org/framework</url>
-        </site>
+        <repository>
+            <id>github</id>
+            <name>GitHub Packages</name>
+            <url>https://maven.pkg.github.com/ever-ag/sc-common-tiles</url>
+        </repository>
     </distributionManagement>
     <dependencyManagement>
         <dependencies>
@@ -343,17 +362,18 @@
                     </execution>
                 </executions>
             </plugin>
-            <plugin>
-                <groupId>org.sonatype.plugins</groupId>
-                <artifactId>nexus-staging-maven-plugin</artifactId>
-                <version>1.7.0</version>
-                <extensions>true</extensions>
-                <configuration>
-                    <serverId>ossrh</serverId>
-                    <nexusUrl>https://oss.sonatype.org/</nexusUrl>
-                    <autoReleaseAfterClose>true</autoReleaseAfterClose>
-                </configuration>
-            </plugin>
+            <!--      in mvn deploy this is giving error so commented -->
+<!--            <plugin>-->
+<!--                <groupId>org.sonatype.plugins</groupId>-->
+<!--                <artifactId>nexus-staging-maven-plugin</artifactId>-->
+<!--                <version>1.7.0</version>-->
+<!--                <extensions>true</extensions>-->
+<!--                <configuration>-->
+<!--                    <serverId>ossrh</serverId>-->
+<!--                    <nexusUrl>https://oss.sonatype.org/</nexusUrl>-->
+<!--                    <autoReleaseAfterClose>true</autoReleaseAfterClose>-->
+<!--                </configuration>-->
+<!--            </plugin>-->
         </plugins>
 
         <defaultGoal>install</defaultGoal>
