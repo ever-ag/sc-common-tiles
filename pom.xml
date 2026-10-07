@@ -33,7 +33,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.apache.tiles</groupId>
     <artifactId>tiles-parent</artifactId>
-    <version>4.0.0</version>
+    <version>4.0.1</version>
     <packaging>pom</packaging>
     <name>Tiles 3</name>
     <description>Tiles 3: A framework for page composition.</description>
@@ -388,7 +388,7 @@
         <tiles.osgi.private />
         <tiles.manifestfile>target/osgi/MANIFEST.MF</tiles.manifestfile>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <tiles.request.version>2.0.0</tiles.request.version>
+        <tiles.request.version>2.0.1</tiles.request.version>
         <tiles.autotag.version>2.0.0</tiles.autotag.version>
     </properties>
 
