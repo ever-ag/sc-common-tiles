@@ -1,10 +1,15 @@
 name: Publish
 
-# Deploys every module to GitHub Packages (ever-ag/sc-common-tiles) when trunk
-# changes and the project version in pom.xml hasn't been published yet.
-# To release, bump the version in every pom (mvn versions:set -DnewVersion=X.Y.Z
-# -DgenerateBackupPoms=false) in the PR. Merges that don't bump it (e.g. Dependabot
-# updates) are skipped instead of failing on a duplicate version.
+# Deploys every module to GitHub Packages (ever-ag/sc-common-tiles) when trunk changes and
+# the pom version hasn't been released yet. To release, bump the version in every pom
+# (mvn versions:set -DnewVersion=X.Y.Z -DgenerateBackupPoms=false) in the PR. Merges that
+# don't bump it (e.g. Dependabot updates) are skipped.
+#
+# A version counts as released only once its GitHub release/tag exists. The tag is created
+# after every module has been verified on GitHub Packages. If a run fails partway through
+# the upload, re-run this workflow: it deploys only the modules that are still missing
+# (GitHub Packages does not allow overwriting a version). If a module was left half-uploaded
+# (e.g. its jar but not its pom), delete that package version in GitHub, then re-run.
 #
 # The tiles-request version this build uses (tiles.request.version) must already be
 # published from ever-ag/sc-common-tiles-request.
@@ -49,26 +54,18 @@ jobs:
           echo "VERSION=$(mvn -B -q -N help:evaluate -Dexpression=project.version -DforceStdout)" >> "$GITHUB_ENV"
           echo "REQUEST_VERSION=$(mvn -B -q -N help:evaluate -Dexpression=tiles.request.version -DforceStdout)" >> "$GITHUB_ENV"
 
-      - name: Check whether this version is already published
+      - name: Check whether this version is already released
         id: check
         run: |
           if [[ "$VERSION" == *-SNAPSHOT ]]; then
             echo "::notice::$VERSION is a snapshot; nothing to publish."
             echo "publish=false" >> "$GITHUB_OUTPUT"
-            exit 0
+          elif git ls-remote --exit-code --tags origin "refs/tags/${VERSION}" > /dev/null; then
+            echo "::notice::tiles $VERSION is already released (tag exists); skipping. Bump the version to release."
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "publish=true" >> "$GITHUB_OUTPUT"
           fi
-          url="https://maven.pkg.github.com/${GITHUB_REPOSITORY}/org/apache/tiles/tiles-parent/${VERSION}/tiles-parent-${VERSION}.pom"
-          status=$(curl -s -o /dev/null -w '%{http_code}' -u "${MAVEN_USER}:${MAVEN_TOKEN}" "$url")
-          case "$status" in
-            200|302)
-              echo "::notice::tiles $VERSION is already published; skipping. Bump the version to release."
-              echo "publish=false" >> "$GITHUB_OUTPUT" ;;
-            404)
-              echo "publish=true" >> "$GITHUB_OUTPUT" ;;
-            *)
-              echo "::error::Unexpected HTTP $status while checking $url"
-              exit 1 ;;
-          esac
 
       - name: Check that tiles-request ${{ env.REQUEST_VERSION }} is published
         if: steps.check.outputs.publish == 'true'
@@ -80,11 +77,38 @@ jobs:
             exit 1
           fi
 
-      # Runs the tiles-core tests (incl. the CVE-2023-49735 regression tests) as part of the deploy;
-      # the parent pom still excludes tests in the other modules.
-      - name: Build, test and deploy to GitHub Packages
+      # Build and test every module before anything is uploaded, so a build or test failure
+      # never leaves a partial release on GitHub Packages. This runs the tiles-core tests,
+      # including the CVE-2023-49735 regression tests (the parent pom excludes the other
+      # modules' tests). Installing also lets a partial re-deploy below resolve the sibling
+      # modules locally.
+      - name: Build and test the whole reactor
         if: steps.check.outputs.publish == 'true'
-        run: mvn -B -DargLine="--add-opens=java.base/java.lang=ALL-UNNAMED" deploy
+        run: mvn -B -DargLine="--add-opens=java.base/java.lang=ALL-UNNAMED" install
+
+      - name: Find modules not yet on GitHub Packages
+        if: steps.check.outputs.publish == 'true'
+        id: missing
+        run: |
+          modules=$(bash .github/scripts/unpublished-modules.sh)
+          echo "modules=$modules" >> "$GITHUB_OUTPUT"
+
+      - name: Deploy the missing modules
+        if: steps.check.outputs.publish == 'true' && steps.missing.outputs.modules != ''
+        env:
+          MODULES: ${{ steps.missing.outputs.modules }}
+        run: |
+          echo "Deploying: $MODULES"
+          mvn -B deploy -DskipTests -DdeployAtEnd=true -pl "$MODULES"
+
+      - name: Verify every module is published
+        if: steps.check.outputs.publish == 'true'
+        run: |
+          remaining=$(bash .github/scripts/unpublished-modules.sh)
+          if [[ -n "$remaining" ]]; then
+            echo "::error::Still missing on GitHub Packages: $remaining. Re-run this workflow to deploy them."
+            exit 1
+          fi
 
       - name: Tag release
         if: steps.check.outputs.publish == 'true'
