@@ -27,6 +27,7 @@ import java.util.Locale;
 import java.util.Map;
 
 import org.apache.tiles.Definition;
+import org.apache.tiles.locale.LocaleSanitizer;
 import org.apache.tiles.request.ApplicationContext;
 import org.apache.tiles.request.ApplicationResource;
 import org.apache.tiles.request.locale.LocaleUtil;
@@ -84,16 +85,17 @@ public class LocaleUrlDefinitionDAO extends BaseLocaleUrlDefinitionDAO {
 
     /**
      * Returns a list of locales from root to the customizationKey.
+     * <p>
+     * A <code>null</code> customization key, or one that is not safe to use in
+     * a resource path (see {@link LocaleSanitizer#isSafe(Locale)}), is
+     * replaced by {@link Locale#ROOT}, so that only the default sources are
+     * loaded (CVE-2023-49735).
+     * </p>
      * @param customizationKey the target Locale.
      * @return the list of its ancestors.
      */
     private ArrayList<Locale> computeLocales(Locale customizationKey) {
-        Locale postfix;
-        if(customizationKey == null) {
-            postfix = Locale.ROOT;
-        } else {
-            postfix = customizationKey;
-        }
+        Locale postfix = LocaleSanitizer.safeOrRoot(customizationKey);
         ArrayList<Locale> postfixes = new ArrayList<Locale>();
         while (postfix != null) {
             postfixes.add(postfix);

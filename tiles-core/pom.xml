@@ -26,7 +26,7 @@
   <parent>
     <groupId>org.apache.tiles</groupId>
     <artifactId>tiles-parent</artifactId>
-    <version>4.0.0</version>
+    <version>4.0.1</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
@@ -60,6 +60,22 @@
         <targetPath>META-INF</targetPath>
       </resource>
     </resources>
+
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <!-- The parent pom excludes every test class (**/*.java), so no test
+               runs during "mvn verify". Run the tiles-core tests (they all pass)
+               so that the CVE-2023-49735 regression tests (TMI-2379) are
+               executed on every build. -->
+          <excludes combine.self="override">
+            <exclude>**/*$*</exclude>
+          </excludes>
+        </configuration>
+      </plugin>
+    </plugins>
 
   </build>
 
