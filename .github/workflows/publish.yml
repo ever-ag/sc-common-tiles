@@ -93,13 +93,16 @@ jobs:
           modules=$(bash .github/scripts/unpublished-modules.sh)
           echo "modules=$modules" >> "$GITHUB_OUTPUT"
 
+      # Not using -DdeployAtEnd=true: maven-deploy-plugin 2.8.2 silently skips the
+      # upload with it in this reactor. A partial upload is handled by the
+      # missing-modules check above plus a re-run of this workflow.
       - name: Deploy the missing modules
         if: steps.check.outputs.publish == 'true' && steps.missing.outputs.modules != ''
         env:
           MODULES: ${{ steps.missing.outputs.modules }}
         run: |
           echo "Deploying: $MODULES"
-          mvn -B deploy -DskipTests -DdeployAtEnd=true -pl "$MODULES"
+          mvn -B deploy -DskipTests -pl "$MODULES"
 
       - name: Verify every module is published
         if: steps.check.outputs.publish == 'true'
