@@ -29,6 +29,7 @@ import java.util.Map;
 import org.apache.tiles.Definition;
 import org.apache.tiles.definition.pattern.PatternDefinitionResolver;
 import org.apache.tiles.definition.pattern.PatternDefinitionResolverAware;
+import org.apache.tiles.locale.LocaleSanitizer;
 import org.apache.tiles.request.ApplicationContext;
 import org.apache.tiles.request.ApplicationResource;
 import org.apache.tiles.request.locale.LocaleUtil;
@@ -96,12 +97,17 @@ public class CachingLocaleUrlDefinitionDAO extends BaseLocaleUrlDefinitionDAO
         this.definitionResolver = definitionResolver;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     * <p>
+     * A <code>null</code> customization key, or one that is not safe to use in
+     * a resource path (see {@link LocaleSanitizer#isSafe(Locale)}), is
+     * replaced by {@link Locale#ROOT}, i.e. the default definitions.
+     * </p>
+     */
     public Definition getDefinition(String name, Locale customizationKey) {
         Definition retValue = null;
-        if (customizationKey == null) {
-            customizationKey = Locale.ROOT;
-        }
+        customizationKey = LocaleSanitizer.safeOrRoot(customizationKey);
         Map<String, Definition> definitions = getDefinitions(customizationKey);
         if (definitions != null) {
             retValue = definitions.get(name);
@@ -120,11 +126,16 @@ public class CachingLocaleUrlDefinitionDAO extends BaseLocaleUrlDefinitionDAO
         return retValue;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     * <p>
+     * A <code>null</code> customization key, or one that is not safe to use in
+     * a resource path (see {@link LocaleSanitizer#isSafe(Locale)}), is
+     * replaced by {@link Locale#ROOT}, i.e. the default definitions.
+     * </p>
+     */
     public Map<String, Definition> getDefinitions(Locale customizationKey) {
-        if (customizationKey == null) {
-            customizationKey = Locale.ROOT;
-        }
+        customizationKey = LocaleSanitizer.safeOrRoot(customizationKey);
         Map<String, Definition> retValue = locale2definitionMap
                 .get(customizationKey);
         if (retValue == null || (checkRefresh && refreshRequired())) {
@@ -215,6 +226,13 @@ public class CachingLocaleUrlDefinitionDAO extends BaseLocaleUrlDefinitionDAO
 
     /**
      * Loads the raw definitions from the sources associated with a locale.
+     * <p>
+     * The locale is part of the path of the localized sources, so a locale
+     * that is not safe to use in a path (see
+     * {@link LocaleSanitizer#isSafe(Locale)}) is replaced by
+     * {@link Locale#ROOT} and only the default sources are loaded
+     * (CVE-2023-49735).
+     * </p>
      *
      * @param customizationKey The locale to use when loading Resources.
      * @return The loaded definitions.
@@ -222,6 +240,7 @@ public class CachingLocaleUrlDefinitionDAO extends BaseLocaleUrlDefinitionDAO
      */
     protected Map<String, Definition> loadRawDefinitionsFromResources(
             Locale customizationKey) {
+        customizationKey = LocaleSanitizer.safeOrRoot(customizationKey);
         Map<String, Definition> localeDefsMap;
 
         Locale parentLocale = LocaleUtil.getParentLocale(customizationKey);

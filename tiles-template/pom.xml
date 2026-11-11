@@ -30,7 +30,7 @@
   <parent>
     <artifactId>tiles-parent</artifactId>
     <groupId>org.apache.tiles</groupId>
-    <version>4.0.0</version>
+    <version>4.0.1</version>
   </parent>
   <properties>
       <!-- decrease this whenever possible -->
